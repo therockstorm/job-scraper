@@ -1,18 +1,15 @@
 import cheerio from 'cheerio';
+import retry from 'retry';
 import ChallengeClient from './ChallengeClient';
 import { error, log, toIsoDateStr } from './util';
 
-const scraperError = (remainingIds, failedIds) =>
-  error(`Failed to scrape jobs.
+const scraperError = (remainingIds, failedIds) => error(`Failed to scrape jobs.
 remainingIds=${Array.from(remainingIds).toString()}
 failedIds=${failedIds.toString()}`);
 
 // Questions:
 //  Don't hard-code PAGE_SIZE
 //  Can I use libs to parse the html?
-//  Assume gets to page only contain jobIds I need or should I check against list I get back?
-
-// Store ids in set and remove as posted to batch. Print ids you failed to scrape
 
 const PAGE_SIZE = 10;
 const WHITESPACE_RE = new RegExp(/\s\s+/, 'g');
@@ -33,10 +30,9 @@ export default class Scraper {
         const jobPromises = this.scrapeJobs(ids.length / PAGE_SIZE);
         Promise.all(jobPromises)
           .then(() => {
-            log('All resolved.');
             const failures = this.jobIds.size || this.failedIds.length;
             if (failures) scraperError(this.jobIds, this.failedIds);
-            else log('ALL DONE!');
+            else this.client.completeChallenge().then(res => log(res));
           });
       });
   }
@@ -56,19 +52,17 @@ export default class Scraper {
 
   faultTolerantGetJobs(page) {
     return new Promise((resolve) => {
-      this.client.getJobs(page)
-        .then(res => (res instanceof Error ?
-          this.client.getJobs(page).then(res2 => resolve(res2)) : resolve(res)));
+      const op = retry.operation({ retries: 5 });
+      op.attempt(() => {
+        this.client.getJobs(page)
+          .then(res => (res instanceof Error ? op.retry(res) : resolve(res)));
+      });
     });
   }
 
   scrapePage(html) {
     return new Promise((resolve) => {
       const jobs = [];
-      if (!html) {
-        console.log('WHAT!?!?!');
-        process.exit();
-      }
       const $ = cheerio.load(html);
 
       $('a').each((i, elem) => {
