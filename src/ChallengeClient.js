@@ -30,7 +30,7 @@ export default class ChallengeClient {
   getJobs(page) {
     return axios
       .get('jobs', { params: { page }, responseType: 'text' })
-      .then(res => res.data)
+      .then(res => (res.data ? res.data : getJobsError(page, false)))
       .catch(err => getJobsError(page, err.response));
   }
 

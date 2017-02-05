@@ -44,8 +44,7 @@ export default class Scraper {
   scrapeJobs(pages) {
     return [...Array(pages)].map((_, i) => new Promise((resolve) => {
       const page = i + 1;
-      this.client
-        .getJobs(page)
+      this.faultTolerantGetJobs(page)
         .then(html => this.scrapePage(html))
         .then(jobs => this.client.createJobs(jobs, page)
           .then((res) => {
@@ -55,9 +54,21 @@ export default class Scraper {
     }));
   }
 
+  faultTolerantGetJobs(page) {
+    return new Promise((resolve) => {
+      this.client.getJobs(page)
+        .then(res => (res instanceof Error ?
+          this.client.getJobs(page).then(res2 => resolve(res2)) : resolve(res)));
+    });
+  }
+
   scrapePage(html) {
     return new Promise((resolve) => {
       const jobs = [];
+      if (!html) {
+        console.log('WHAT!?!?!');
+        process.exit();
+      }
       const $ = cheerio.load(html);
 
       $('a').each((i, elem) => {
