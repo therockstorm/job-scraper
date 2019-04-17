@@ -5,6 +5,7 @@ import sinon from 'sinon';
 import ChallengeClient from '../src/ChallengeClient';
 
 const PAGE = 2;
+const EMAIL = 'example@example.com';
 const ERROR = new Error('Error occurred communicating with Scraper Challenge API.');
 const postStub = sinon.stub(axios, 'post');
 const getStub = sinon.stub(axios, 'get');
@@ -36,7 +37,7 @@ describe('getJobIds', () => {
       },
     },
   };
-  const setup = () => postStub.withArgs('challenges', { data: { email: 'x@y.z' } });
+  const setup = () => postStub.withArgs('challenges', { data: { email: EMAIL } });
   const setupResolve = ret => setup().returns(Promise.resolve(ret));
   const setupReject = ret => setup().returns(Promise.reject(ret));
 
