@@ -9,7 +9,7 @@
   "license": "MIT",
   "dependencies": {
     "aws-sdk": "^2.9.0",
-    "axios": "^0.15.3",
+    "axios": "^0.18.1",
     "cheerio": "^0.22.0",
     "retry": "^0.10.1"
   },
